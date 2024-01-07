@@ -9,16 +9,26 @@
     <input type="text" id="apiKey" placeholder="Enter your API key">
     <button onclick="connectWebSocket()">Connect</button><br>
 
-    
+    <label >Send Logs</label>
     <textarea id="send-log" cols="100" rows="20"></textarea><br>
-    <textarea name="" id="receive-log" cols="30" rows="10"></textarea>
+
+    <label >Receive Messages:</label>
+    <textarea name="" id="receive-log" cols="100" rows="10"></textarea><br>
+
+    <label >Send Message Box:</label>
     <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="Send">
+    <input id="chat-message-submit" type="button" value="Send"><br>
+
+    <label for="apiKey">Read Receipts</label>
+    <textarea name="" id="read_receipts" cols="100" rows="10"></textarea><br>
+    
     {{ room_name|json_script:"room-name" }}
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
         const apiKey = document.querySelector('#apiKey');
+
+        const read_receipt_log = document.querySelector('#read_receipts');
 
         function connectWebSocket(){
 
@@ -50,14 +60,21 @@
                     'message': "read",
                     "message_id" : data.message_id
                 }));
+
                     document.querySelector('#receive-log').value += (data.message + '\n');
 
+                }
+
+                else{
+                    read_receipt_log.value += (JSON.stringify(data) + '\n\n')
+                    
                 }
             };
 
             readReceiptSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
                 console.log("message read" , data);
+                read_receipt_log.value += (JSON.stringify(data) + '\n\n');
 
             };
 
