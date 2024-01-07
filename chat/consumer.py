@@ -3,8 +3,6 @@ from channels.db import database_sync_to_async
 
 from channels.generic.websocket import AsyncWebsocketConsumer
 
-from datetime import datetime , timedelta
-
 from .models import Room , Message
 from account.models import Token
 
@@ -49,8 +47,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
 
-        print(self.channel_name)
-
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         self.room_group_name = f"chat_{self.room_name}"
         self.user_token = self.scope["url_route"]["kwargs"]["api_key"]
@@ -64,14 +60,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
         val = vae.get("data")
 
         if value:
-            self.send(text_data = json.dumps({"error" : value}))
             await self.accept()
-            self.disconnect()
+            await self.send(text_data = json.dumps({"error" : value}))
+            
+            await self.disconnect()
         
         elif val:
-            print("dadfad" , val)
-            self.send(text_data = json.dumps({"data" : val}))
+            
             await self.accept()
+            await self.send(text_data = json.dumps({"data" : val}))
+            
+            
         # Join room group
         
 
@@ -126,9 +125,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         exclude = event.get("exclude" , self.channel_name)
         message_id = event["message_id"]
 
-        print("users" , self.scope["user"])
-        print("1234124" , message)
-
 
         if exclude != self.channel_name:
 
@@ -169,8 +165,8 @@ class ReadReceiptConsumer(AsyncWebsocketConsumer):
         value = value.get("error")
 
         if value:
-            self.send(text_data = json.dumps({"error" : value}))
-            self.disconnect()
+            await self.send(text_data = json.dumps({"error" : value}))
+            await self.disconnect()
 
 
     
@@ -180,8 +176,6 @@ class ReadReceiptConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def mark_message_as_read(self, message_id):
         message = Message.objects.get(id = message_id)
-
-        print("Message" , message)
 
         message.seen = True
         message.save()
@@ -193,11 +187,6 @@ class ReadReceiptConsumer(AsyncWebsocketConsumer):
         text_data_json = json.loads(text_data)
         action = text_data_json["message"]
         message_id =  text_data_json["message_id"]
-
-
-        print("message" , message_id , self.scope["user"])
-
-    
 
             # Set the message as read
         await self.mark_message_as_read(message_id)
@@ -212,11 +201,8 @@ class ReadReceiptConsumer(AsyncWebsocketConsumer):
         message_id =  event["message_id"]
         exclude = event.get("exclude" , self.channel_name)
 
-        print("23" ,message)
 
         if exclude != self.channel_name:
-
-            print("454545" ,message)
 
         # Send message to WebSocket
             await self.send(text_data=json.dumps({"message_id": message_id , "action" : "read"}))
